@@ -3,7 +3,7 @@ info:
   title: Mutant Supreme EN Actions
   version: "1.1.4"
 servers:
-  - url: https://fabricia-mutant-schema   # 🔑 URL simbólica de base
+  - url: https://fabricia07.github.io/fabricia-mutant-schema/schema.yaml
 
 paths:
   /mutate:
@@ -114,8 +114,7 @@ paths:
                   sugestaoMelhoria:
                     type: string
 
-components:
-  schemas: {}
+components: {}
 
 x-rules:
-  - url: "https://docs.google.com/document/d/1GR7d34JmC-LYyO0hpc-lPtgBBzuSMDntYlYTceOi6xY/export?format=txt"
+  - "https://docs.google.com/document/d/1GR7d34JmC-LYyO0hpc-lPtgBBzuSMDntYlYTceOi6xY/export?format=txt"
