@@ -114,7 +114,11 @@ paths:
                   sugestaoMelhoria:
                     type: string
 
-components: {}
+components:
+  schemas:
+    Dummy:
+      type: object
+      description: Placeholder schema to satisfy OpenAPI requirements
 
 x-rules:
   - "https://docs.google.com/document/d/1GR7d34JmC-LYyO0hpc-lPtgBBzuSMDntYlYTceOi6xY/export?format=txt"
