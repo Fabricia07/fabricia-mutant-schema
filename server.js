@@ -1,42 +1,63 @@
-const express = require("express");
-const bodyParser = require("body-parser");
+import express from "express";
+import bodyParser from "body-parser";
+
 const app = express();
 const PORT = process.env.PORT || 10000;
 
 app.use(bodyParser.json());
 
-// MUTATE
+// ✅ Rota de mutação
 app.post("/mutate", (req, res) => {
   const { textoPT, dna, timeline } = req.body;
-  res.json({
-    roteiroEN: `Mutated version of: ${textoPT} | DNA: ${dna} | Timeline: ${timeline}`,
+
+  if (!textoPT || !dna || !timeline) {
+    return res.status(400).json({ error: "Campos obrigatórios ausentes" });
+  }
+
+  // Aqui você colocaria a lógica real da mutação
+  const roteiroEN = `🎬 Roteiro (EN) baseado no DNA: ${dna}, Timeline: ${timeline}\n\nTexto: ${textoPT}`;
+
+  const resposta = {
+    roteiroEN,
     aberturaAB: [
-      "She thought it was just another morning...",
-      "March 15: The last morning Ethan ever came downstairs."
+      "Option A: The day everything changed.",
+      "Option B: Silence louder than words."
     ],
     shorts: [
-      "One morning changed everything.",
-      "Grief doesn’t wait.",
-      "Silence louder than words."
+      "Some mornings change everything.",
+      "Silence can be unbearable.",
+      "Grief doesn’t wait."
     ],
-    relatorioSENTRY: "✅ DNA, Timeline e Cultura aplicados."
-  });
+    relatorioSENTRY: "DNA, Timeline e Cultura Americana aplicados."
+  };
+
+  res.json(resposta);
 });
 
-// REVISE
+// ✅ Rota de revisão
 app.post("/revise", (req, res) => {
   const { trechoEN } = req.body;
+
+  if (!trechoEN) {
+    return res.status(400).json({ error: "TrechoEN é obrigatório" });
+  }
+
   res.json({
-    trechoRevisado: `Revised: ${trechoEN}`
+    trechoRevisado: `${trechoEN} (revisado para fluidez americana)`
   });
 });
 
-// CTR TEST
+// ✅ Rota de CTR test
 app.post("/ctrtest", (req, res) => {
   const { titulo, thumbnailDescricao } = req.body;
+
+  if (!titulo || !thumbnailDescricao) {
+    return res.status(400).json({ error: "Título e thumbnail são obrigatórios" });
+  }
+
   res.json({
     ctrPrevisto: "Alto",
-    sugestaoMelhoria: `Título "${titulo}" com thumbnail "${thumbnailDescricao}" pode ter CTR maior com contraste mais forte.`
+    sugestaoMelhoria: `Considere adicionar mais emoção ao título: "${titulo} - The Untold Story"`
   });
 });
 
