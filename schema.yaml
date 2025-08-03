@@ -3,7 +3,7 @@ info:
   title: Mutant Supreme EN Actions
   version: "1.1.4"
 servers:
-  - url: https://fabriciaoliveira.github.io/fabricia-mutant-schema
+  - url: https://raw.githubusercontent.com/Fabricia07/fabricia-mutant-schema/main/schema.yaml
 
 paths:
   /mutate:
