@@ -116,9 +116,9 @@ paths:
 
 components:
   schemas:
-    Dummy:
+    DefaultSchema:
       type: object
-      description: Placeholder schema to satisfy OpenAPI requirements
+      description: Dummy schema to satisfy OpenAPI requirements
 
 x-rules:
   - "https://docs.google.com/document/d/1GR7d34JmC-LYyO0hpc-lPtgBBzuSMDntYlYTceOi6xY/export?format=txt"
