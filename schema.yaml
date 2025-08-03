@@ -26,11 +26,10 @@ paths:
                   description: DNA dos personagens
                 timeline:
                   type: string
-                  description: Linha do tempo do episódio
+                  description: (Opcional) Se não informado, será puxado automaticamente do Docs.
               required:
                 - textoPT
                 - dna
-                - timeline
       responses:
         "200":
           description: Versão mutada com relatório
