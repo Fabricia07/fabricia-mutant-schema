@@ -1,7 +1,6 @@
 {
   "name": "fabricia-mutant-schema",
   "version": "1.0.0",
-  "description": "Servidor do MUTANT_SUPREME_EN",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
