@@ -1,66 +1,44 @@
-import express from "express";
-import bodyParser from "body-parser";
-
+const express = require('express');
+const bodyParser = require('body-parser');
+const axios = require('axios');
 const app = express();
-const PORT = process.env.PORT || 10000;
 
 app.use(bodyParser.json());
 
-// ✅ Rota de mutação
-app.post("/mutate", (req, res) => {
-  const { textoPT, dna, timeline } = req.body;
+app.post('/mutate', async (req, res) => {
+  try {
+    // Buscar conteúdo do Docs
+    const regrasDocs = await axios.get("https://docs.google.com/document/d/1GR7d34JmC-LYyO0hpc-lPtgBBzuSMDntYlYTceOi6xY/export?format=txt")
+      .then(res => res.data);
 
-  if (!textoPT || !dna || !timeline) {
-    return res.status(400).json({ error: "Campos obrigatórios ausentes" });
+    // Se timeline não for enviada, extrair automaticamente
+    let timeline = req.body.timeline;
+    if (!timeline) {
+      const match = regrasDocs.match(/## 🗓️ Linha do Tempo([\s\S]*?)(##|$)/);
+      timeline = match ? match[1].trim() : "Linha do tempo não especificada no Docs";
+    }
+
+    const payload = {
+      textoPT: req.body.textoPT,
+      dna: req.body.dna,
+      timeline: timeline,
+      regrasDocs: regrasDocs
+    };
+
+    // Simulação de mutação (troque pela sua função real de mutação)
+    const result = {
+      roteiroEN: "Cena mutada com base no texto fornecido.",
+      aberturaAB: ["Option A", "Option B"],
+      shorts: ["Frase 1", "Frase 2", "Frase 3"],
+      relatorioSENTRY: "DNA ✅ | Timeline ✅ | Cultura Americana ✅"
+    };
+
+    res.json(result);
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
-
-  // Aqui você colocaria a lógica real da mutação
-  const roteiroEN = `🎬 Roteiro (EN) baseado no DNA: ${dna}, Timeline: ${timeline}\n\nTexto: ${textoPT}`;
-
-  const resposta = {
-    roteiroEN,
-    aberturaAB: [
-      "Option A: The day everything changed.",
-      "Option B: Silence louder than words."
-    ],
-    shorts: [
-      "Some mornings change everything.",
-      "Silence can be unbearable.",
-      "Grief doesn’t wait."
-    ],
-    relatorioSENTRY: "DNA, Timeline e Cultura Americana aplicados."
-  };
-
-  res.json(resposta);
 });
 
-// ✅ Rota de revisão
-app.post("/revise", (req, res) => {
-  const { trechoEN } = req.body;
-
-  if (!trechoEN) {
-    return res.status(400).json({ error: "TrechoEN é obrigatório" });
-  }
-
-  res.json({
-    trechoRevisado: `${trechoEN} (revisado para fluidez americana)`
-  });
-});
-
-// ✅ Rota de CTR test
-app.post("/ctrtest", (req, res) => {
-  const { titulo, thumbnailDescricao } = req.body;
-
-  if (!titulo || !thumbnailDescricao) {
-    return res.status(400).json({ error: "Título e thumbnail são obrigatórios" });
-  }
-
-  res.json({
-    ctrPrevisto: "Alto",
-    sugestaoMelhoria: `Considere adicionar mais emoção ao título: "${titulo} - The Untold Story"`
-  });
-});
-
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
