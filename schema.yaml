@@ -1,0 +1,121 @@
+openapi: 3.1.0
+info:
+  title: Mutant Supreme EN Actions
+  version: "1.1.4"
+servers:
+  - url: https://fabriciaoliveira.github.io/fabricia-mutant-schema
+
+paths:
+  /mutate:
+    post:
+      operationId: mutateText
+      summary: Mutação completa de texto PT para EN
+      description: Mutação cinematográfica para inglês americano. Respeitar DNA e Linha do Tempo.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                textoPT:
+                  type: string
+                  description: Texto em português para mutação
+                dna:
+                  type: string
+                  description: DNA dos personagens
+                timeline:
+                  type: string
+                  description: Linha do tempo do episódio
+              required:
+                - textoPT
+                - dna
+                - timeline
+      responses:
+        "200":
+          description: Versão mutada com relatório
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  roteiroEN:
+                    type: string
+                  aberturaAB:
+                    type: array
+                    items:
+                      type: string
+                  shorts:
+                    type: array
+                    items:
+                      type: string
+                  relatorioSENTRY:
+                    type: string
+
+  /revise:
+    post:
+      operationId: reviseText
+      summary: Revisão cultural de trecho em inglês
+      description: Ajusta um trecho em inglês para costumes e expressões americanas e voz neural fluida.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                trechoEN:
+                  type: string
+                  description: Trecho em inglês a ser revisado
+              required:
+                - trechoEN
+      responses:
+        "200":
+          description: Trecho revisado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  trechoRevisado:
+                    type: string
+
+  /ctrtest:
+    post:
+      operationId: ctrTest
+      summary: Teste de CTR para títulos e thumbnails
+      description: Analisa título e thumbnail e prevê CTR provável, sugerindo melhorias.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                titulo:
+                  type: string
+                  description: Título a ser testado
+                thumbnailDescricao:
+                  type: string
+                  description: Descrição ou conceito de thumbnail
+              required:
+                - titulo
+                - thumbnailDescricao
+      responses:
+        "200":
+          description: Relatório preditivo de CTR
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ctrPrevisto:
+                    type: string
+                  sugestaoMelhoria:
+                    type: string
+
+components:
+  schemas: {}
+
+x-rules:
+  - url: "https://docs.google.com/document/d/1GR7d34JmC-LYyO0hpc-lPtgBBzuSMDntYlYTceOi6xY/export?format=txt"
