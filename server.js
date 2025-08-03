@@ -1,44 +1,45 @@
-import express from "express";
-import cors from "cors";
-
+const express = require("express");
+const bodyParser = require("body-parser");
 const app = express();
-app.use(cors());
-app.use(express.json());
+const PORT = process.env.PORT || 10000;
 
-// Rota /mutate
+app.use(bodyParser.json());
+
+// MUTATE
 app.post("/mutate", (req, res) => {
   const { textoPT, dna, timeline } = req.body;
   res.json({
-    roteiroEN: `🎬 Mutated (EN Cinematic): ${textoPT}\nDNA: ${dna}\nTimeline: ${timeline}`,
+    roteiroEN: `Mutated version of: ${textoPT} | DNA: ${dna} | Timeline: ${timeline}`,
     aberturaAB: [
-      "She thought the funeral was the end. She was wrong.",
-      "The silence after Ethan’s death was louder than any storm."
+      "She thought it was just another morning...",
+      "March 15: The last morning Ethan ever came downstairs."
     ],
     shorts: [
-      "Grief doesn’t knock. It breaks in.",
-      "Two days later, the silence screamed louder.",
-      "When the night falls, memories don’t rest."
+      "One morning changed everything.",
+      "Grief doesn’t wait.",
+      "Silence louder than words."
     ],
-    relatorioSENTRY: "✅ DNA, Timeline, Cultura Americana aplicados."
+    relatorioSENTRY: "✅ DNA, Timeline e Cultura aplicados."
   });
 });
 
-// Rota /revise
+// REVISE
 app.post("/revise", (req, res) => {
   const { trechoEN } = req.body;
   res.json({
-    trechoRevisado: `📖 Revised for US cinematic flow: ${trechoEN}`
+    trechoRevisado: `Revised: ${trechoEN}`
   });
 });
 
-// Rota /ctrtest
+// CTR TEST
 app.post("/ctrtest", (req, res) => {
   const { titulo, thumbnailDescricao } = req.body;
   res.json({
-    ctrPrevisto: "High CTR predicted",
-    sugestaoMelhoria: `Consider adding suspense keywords to "${titulo}" with thumbnail: ${thumbnailDescricao}`
+    ctrPrevisto: "Alto",
+    sugestaoMelhoria: `Título "${titulo}" com thumbnail "${thumbnailDescricao}" pode ter CTR maior com contraste mais forte.`
   });
 });
 
-const port = process.env.PORT || 3000;
-app.listen(port, () => console.log(`🚀 Server running on port ${port}`));
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
