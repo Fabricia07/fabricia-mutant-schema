@@ -124,4 +124,8 @@ components:
           description: Campo de preenchimento simbólico
 
 x-rules:
-  - https://docs.google.com/document/d/1GR7d34JmC-LYyO0hpc-lPtgBBzuSMDntYlYTceOi6xY/export?format=txt
+  - https://raw.githubusercontent.com/Fabricia07/fabricia-mutant-schema/main/docs/regras-mestras.md
+  - https://raw.githubusercontent.com/Fabricia07/fabricia-mutant-schema/main/docs/dna.md
+  - https://raw.githubusercontent.com/Fabricia07/fabricia-mutant-schema/main/docs/ambientacao.md
+  - https://raw.githubusercontent.com/Fabricia07/fabricia-mutant-schema/main/docs/protocolos.md
+  - https://raw.githubusercontent.com/Fabricia07/fabricia-mutant-schema/main/docs/mutacoes.md
