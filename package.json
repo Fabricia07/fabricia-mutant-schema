@@ -1,14 +1,15 @@
 {
-  "name": "fabricia-mutant-schema",
+  "name": "mutant-server",
   "version": "1.0.0",
-  "description": "Servidor do MUTANT_SUPREME_EN",
+  "description": "Server for Mutant Schema",
   "main": "server.js",
   "type": "module",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "body-parser": "^1.20.2"
+    "express": "^4.19.2",
+    "body-parser": "^1.20.2",
+    "node-fetch": "^3.3.2"
   }
 }
