@@ -51,7 +51,7 @@ async function getAllRules() {
     parsedRules = rules;
     lastFetch = now;
     
-    console.log(`🎯 Parsed: ${Object.keys(rules.dna).length} DNA, ${Object.keys(rules.mutations).length} mutations`);
+    console.log(`🎯 Successfully parsed: ${Object.keys(rules.dna).length} DNA + ${Object.keys(rules.mutations).length} mutations`);
     return rules;
   } catch (error) {
     console.error('❌ Error fetching/parsing rules:', error);
@@ -59,41 +59,49 @@ async function getAllRules() {
   }
 }
 
+// FUNÇÃO DNA CORRIGIDA
 function parseDNA(content) {
   const dnaMap = {};
   
-  // Regex para capturar De/Para: X → Y
-  const deParaRegex = /De\/Para:\s*(.+?)\s*→\s*(.+?)$/gm;
+  console.log("🔍 Parsing DNA content...");
+  
+  // REGEX CORRIGIDO para **De/Para:**
+  const deParaRegex = /\*\*De\/Para:\*\*\s*(.+?)\s*→\s*(.+?)(?:\s|$)/gm;
   let match;
   
   while ((match = deParaRegex.exec(content)) !== null) {
     const [, original, mutated] = match;
     
-    // Limpar espaços e adicionar variações
     const cleanOriginal = original.trim();
     const cleanMutated = mutated.trim();
     
+    // Adicionar mapeamento principal
     dnaMap[cleanOriginal] = cleanMutated;
+    dnaMap[cleanOriginal.toLowerCase()] = cleanMutated;
     
-    // Adicionar variações (primeira palavra, minúsculas)
+    // Adicionar primeiro nome também
     const firstName = cleanOriginal.split(' ')[0];
+    const mutatedFirstName = cleanMutated.split(' ')[0];
+    
     if (firstName && firstName !== cleanOriginal) {
-      const mutatedFirstName = cleanMutated.split(' ')[0];
       dnaMap[firstName] = mutatedFirstName;
       dnaMap[firstName.toLowerCase()] = mutatedFirstName;
     }
     
-    dnaMap[cleanOriginal.toLowerCase()] = cleanMutated;
+    console.log(`  ✅ DNA: ${cleanOriginal} → ${cleanMutated}`);
   }
   
-  console.log(`🎭 Parsed ${Object.keys(dnaMap).length} DNA mappings`);
+  console.log(`🎭 Total DNA mappings: ${Object.keys(dnaMap).length}`);
   return dnaMap;
 }
 
+// FUNÇÃO MUTATIONS CORRIGIDA
 function parseMutations(content) {
   const mutationMap = {};
   
-  // Regex para capturar → nas mutações
+  console.log("🗺️ Parsing mutations content...");
+  
+  // REGEX para capturar "X → Y"
   const mutationRegex = /^[\s\-\*]*(.+?)\s*→\s*(.+?)$/gm;
   let match;
   
@@ -103,21 +111,34 @@ function parseMutations(content) {
     const cleanOriginal = original.trim();
     const cleanMutated = mutated.trim();
     
-    // Pular se for muito curto ou inválido
-    if (cleanOriginal.length < 2 || cleanMutated.length < 2) continue;
+    // Pular títulos e seções
+    if (cleanOriginal.length < 3 || 
+        cleanOriginal.includes('CAPÍTULOS') || 
+        cleanOriginal.includes('BEBIDAS') ||
+        cleanOriginal.includes('TRANSPORTE') ||
+        cleanOriginal.includes('LAZER') ||
+        cleanOriginal.includes('CULTURA') ||
+        cleanOriginal.includes('ECONOMIA') ||
+        cleanOriginal.includes('SAÚDE') ||
+        cleanOriginal.includes('EDUCAÇÃO') ||
+        cleanOriginal.includes('MORADIA')) {
+      continue;
+    }
     
     mutationMap[cleanOriginal] = cleanMutated;
     mutationMap[cleanOriginal.toLowerCase()] = cleanMutated;
     
-    // Variações com/sem artigos
-    const withoutArticles = cleanOriginal.replace(/^(o |a |os |as )/i, '');
+    // Variações sem artigos
+    const withoutArticles = cleanOriginal.replace(/^(o |a |os |as |do |da |dos |das )/i, '');
     if (withoutArticles !== cleanOriginal) {
       mutationMap[withoutArticles] = cleanMutated;
       mutationMap[withoutArticles.toLowerCase()] = cleanMutated;
     }
+    
+    console.log(`  ✅ MUTATION: ${cleanOriginal} → ${cleanMutated}`);
   }
   
-  console.log(`🗺️ Parsed ${Object.keys(mutationMap).length} location/culture mutations`);
+  console.log(`🗺️ Total mutation mappings: ${Object.keys(mutationMap).length}`);
   return mutationMap;
 }
 
@@ -185,7 +206,7 @@ function applyDynamicMutations(text, rules) {
   let mutatedText = text;
   let mutationCount = 0;
   
-  // Combinar DNA + Mutations em ordem de prioridade
+  // Combinar DNA + Mutations em ordem de prioridade (DNA primeiro)
   const allMutations = { ...rules.mutations, ...rules.dna };
   
   // Ordenar por comprimento (mais específicas primeiro)
@@ -268,7 +289,7 @@ app.post("/mutate", async (req, res) => {
     const startTime = Date.now();
     const { textoPT, dna, timeline } = req.body;
     
-    console.log("\n🚀 === DYNAMIC MUTATION REQUEST ===");
+    console.log("\n🚀 === DYNAMIC MUTATION REQUEST v2.1 ===");
     console.log(`📝 Input: ${textoPT?.length || 0} chars`);
     
     if (!textoPT) {
@@ -302,7 +323,7 @@ app.post("/mutate", async (req, res) => {
     };
 
     console.log(`⏱️ Completed in ${stats.processingTime}ms`);
-    console.log("✅ === DYNAMIC MUTATION COMPLETED ===\n");
+    console.log("✅ === DYNAMIC MUTATION COMPLETED v2.1 ===\n");
 
     res.json({
       roteiroEN: cinematicResult,
@@ -315,17 +336,17 @@ app.post("/mutate", async (req, res) => {
         "In the Blue Ridge, some conversations echo through generations.",
         "North Carolina mountains witness more than just changing seasons."
       ],
-      relatorioSENTRY: `🛰️ Relatório SENTRY - DYNAMIC SYSTEM
+      relatorioSENTRY: `🛰️ Relatório SENTRY - FIXED SYSTEM v2.1
 - DNA Rules: ✅ ${stats.dnaRules} personagens carregados dinamicamente
 - Mutation Rules: ✅ ${stats.mutationRules} mutações culturais ativas
 - Geografia: ✅ Asheville locations & Blue Ridge atmosphere
 - Atmosfera: ${stats.hasAtmosphere ? '✅' : '❌'} Smart emotion-based elements
 - Narrativa: ${stats.hasCinematic ? '✅' : '❌'} HBO cinematic style applied
 - Mutações Aplicadas: ${stats.textChanged ? '✅' : '❌'} Text transformed
-- Processamento: ${stats.processingTime}ms (dynamic parsing)
+- Processamento: ${stats.processingTime}ms (dynamic parsing FIXED)
 - Source: GitHub Live (auto-updating)
 - Timestamp: ${new Date().toISOString()}
-- System: MUTANT_SUPREME_EN v2.0 Dynamic`
+- System: MUTANT_SUPREME_EN v2.1 FIXED`
     });
 
   } catch (err) {
@@ -333,7 +354,7 @@ app.post("/mutate", async (req, res) => {
     res.status(500).json({ 
       error: "Erro no sistema dinâmico",
       details: err.message,
-      system: "MUTANT_SUPREME_EN v2.0"
+      system: "MUTANT_SUPREME_EN v2.1"
     });
   }
 });
@@ -341,7 +362,7 @@ app.post("/mutate", async (req, res) => {
 app.get("/health", (req, res) => {
   res.json({ 
     status: "OK", 
-    system: "MUTANT_SUPREME_EN v2.0 Dynamic",
+    system: "MUTANT_SUPREME_EN v2.1 FIXED",
     source: "GitHub Live Auto-Parsing",
     cache: parsedRules ? "active" : "empty",
     uptime: process.uptime(),
@@ -357,23 +378,23 @@ app.get("/health", (req, res) => {
 app.get("/debug/rules", async (req, res) => {
   const rules = await getAllRules();
   res.json({
-    system: "MUTANT_SUPREME_EN v2.0 Dynamic",
+    system: "MUTANT_SUPREME_EN v2.1 FIXED",
     rulesBreakdown: {
       dnaCount: Object.keys(rules.dna).length,
       mutationsCount: Object.keys(rules.mutations).length,
       atmosphereElements: Object.keys(rules.atmosphere).length,
       protocolsActive: Object.keys(rules.protocols).length
     },
-    sampleDNA: Object.fromEntries(Object.entries(rules.dna).slice(0, 5)),
-    sampleMutations: Object.fromEntries(Object.entries(rules.mutations).slice(0, 5)),
+    sampleDNA: Object.fromEntries(Object.entries(rules.dna).slice(0, 10)),
+    sampleMutations: Object.fromEntries(Object.entries(rules.mutations).slice(0, 10)),
     cacheStatus: parsedRules ? "active" : "empty",
     lastFetch: lastFetch ? new Date(lastFetch).toISOString() : "never"
   });
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 MUTANT_SUPREME_EN v2.0 Dynamic Server running on port ${PORT}`);
+  console.log(`🚀 MUTANT_SUPREME_EN v2.1 FIXED Server running on port ${PORT}`);
   console.log(`📁 Auto-parsing from GitHub: ${RULES_FILES.length} files`);
-  console.log(`🧠 Dynamic rule processing: DNA + Mutations + Atmosphere + Protocols`);
-  console.log(`🎯 Enterprise-grade system with live updates activated`);
+  console.log(`🔧 REGEX FIXED: DNA + Mutations parsing corrected`);
+  console.log(`🎯 Enterprise-grade system with WORKING live updates`);
 });
