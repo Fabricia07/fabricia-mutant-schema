@@ -69,27 +69,11 @@ async function processCompleteMutation(textoPT, dna = "auto", timeline = "auto")
 
     console.log("🔄 Processing complete mutation...");
 
-    // Substituições básicas (DNA + locais principais)
-    let mutatedText = textoPT;
-    const basicMutations = {
-      Rafael: "Ethan Bennett",
-      "Márcia Oliveira": "Maggie Bennett",
-      Márcia: "Maggie Bennett",
-      "República do Peru, Copacabana": "847 Haywood Road, West Asheville",
-      "Fontes Engenharia": "Sullivan Engineering & Architecture",
-      "Armando Luiz Fontes": "Dr. Raymond Sullivan",
-      "Hospital Lourenço Jorge": "Mission Hospital",
-    };
-
-    for (const [pt, en] of Object.entries(basicMutations)) {
-      const regex = new RegExp(pt, "gi");
-      if (regex.test(mutatedText)) {
-        mutatedText = mutatedText.replace(regex, en);
-        console.log(`  ✅ ${pt} → ${en}`);
-      }
-    }
-
-    // ================== CHAMADA À OPENAI ==================
+// Usando apenas GitHub rules (completa)
+let mutatedText = textoPT;
+console.log("🔄 Using complete GitHub rules for all mutations...");
+    
+// ================== CHAMADA À OPENAI ==================
     const prompt = `
 You are a cinematic storyteller (HBO/Netflix style).
 Context rules:
