@@ -69,11 +69,47 @@ async function processCompleteMutation(textoPT, dna = "auto", timeline = "auto")
 
     console.log("🔄 Processing complete mutation...");
 
-// Usando apenas GitHub rules (completa)
-let mutatedText = textoPT;
-console.log("🔄 Using complete GitHub rules for all mutations...");
-    
-// ================== CHAMADA À OPENAI ==================
+    // Substituições básicas (DNA + locais principais) - MELHORADO
+    let mutatedText = textoPT;
+    const basicMutations = {
+      Rafael: "Ethan Bennett",
+      "Márcia Oliveira": "Maggie Bennett",
+      Márcia: "Maggie Bennett",
+      "República do Peru, Copacabana": "847 Haywood Road, West Asheville",
+      "Fontes Engenharia": "Sullivan Engineering & Architecture",
+      "Armando Luiz Fontes": "Dr. Raymond Sullivan",
+      "Hospital Lourenço Jorge": "Mission Hospital",
+      // ADICIONAR AS QUE ESTAVAM FALTANDO:
+      "Diego Lacerda": "Joshua Hamilton",
+      "Diego": "Joshua",
+      "Bruno": "Brandon Adams",
+      "Angra dos Reis": "Lake Lure",
+      "Mangaratiba": "Highlands",
+      "Costa Verde": "Blue Ridge region",
+      "Miami": "Asheville",
+      "Florida": "North Carolina"
+    };
+
+    console.log("🔧 Applying basic mutations with boundary detection...");
+    let totalReplacements = 0;
+
+    for (const [pt, en] of Object.entries(basicMutations)) {
+      // ✅ MELHORIA 1: Boundary regex para palavras isoladas
+      const regex = new RegExp(`\\b${pt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, "gi");
+      
+      // ✅ MELHORIA 2: Contar replacements para diagnóstico
+      const beforeCount = (mutatedText.match(regex) || []).length;
+      
+      if (beforeCount > 0) {
+        mutatedText = mutatedText.replace(regex, en);
+        totalReplacements += beforeCount;
+        console.log(`  ✅ ${pt} → ${en} (${beforeCount} replacements)`);
+      }
+    }
+
+    console.log(`🎯 Total mutations applied: ${totalReplacements}`);
+
+    // ================== CHAMADA À OPENAI ==================
     const prompt = `
 You are a cinematic storyteller (HBO/Netflix style).
 Context rules:
@@ -105,6 +141,13 @@ ${mutatedText}
 
       englishDraft = response.choices[0].message.content;
 
+      // ✅ MELHORIA 3: Validação de resposta vazia
+      if (!englishDraft || englishDraft.trim().length < 200) {
+        console.warn(`⚠️ Response too short or empty (${englishDraft?.length || 0} chars). Retrying...`);
+        retry++;
+        continue;
+      }
+
       // Validação anti-PT
       const portugueseWords = [" e ", " de ", " para ", " com ", "não ", "sim ", "mas ", "quando ", "então "];
       const hasPortuguese = portugueseWords.some((word) => englishDraft.toLowerCase().includes(word));
@@ -127,14 +170,16 @@ ${mutatedText}
         "In the Blue Ridge, some conversations echo through generations.",
         "North Carolina mountains witness more than just changing seasons.",
       ],
-      relatorioSENTRY: `🛰️ Relatório SENTRY - HYBRID SYSTEM
+      relatorioSENTRY: `🛰️ Relatório SENTRY - HYBRID SYSTEM v4.1
 - Rules Context: ✅ ${rulesContext.length} chars loaded from GitHub
-- DNA + Mutações: ✅ Applied
+- Basic Mutations: ✅ ${totalReplacements} replacements applied
+- Boundary Detection: ✅ Active
 - Post-process: ✅ OpenAI HBO-style polish
 - Anti-PT: ✅ Validated
+- Response Length: ${englishDraft.length} chars
 - Retries: ${retry}
 - Timestamp: ${new Date().toISOString()}
-- System: MUTANT_SUPREME_EN v4.0 HYBRID`,
+- System: MUTANT_SUPREME_EN v4.1 ENHANCED`,
     };
   } catch (error) {
     console.error("❌ Mutation processing error:", error);
@@ -161,7 +206,7 @@ app.post("/mutate", async (req, res) => {
 app.get("/health", (req, res) => {
   res.json({
     status: "OK",
-    system: "MUTANT_SUPREME_EN v4.0 HYBRID",
+    system: "MUTANT_SUPREME_EN v4.1 ENHANCED",
     cache: allRulesContent ? "active" : "empty",
     uptime: process.uptime(),
     rulesSize: allRulesContent ? allRulesContent.length : 0,
@@ -171,7 +216,7 @@ app.get("/health", (req, res) => {
 app.get("/debug/rules", async (req, res) => {
   const rules = await loadAllRules();
   res.json({
-    system: "MUTANT_SUPREME_EN v4.0 HYBRID",
+    system: "MUTANT_SUPREME_EN v4.1 ENHANCED",
     rulesLoaded: !!rules,
     rulesSize: rules ? rules.length : 0,
     sample: rules ? rules.substring(0, 500) + "..." : null,
@@ -180,7 +225,8 @@ app.get("/debug/rules", async (req, res) => {
 
 // ================== START ==================
 app.listen(PORT, () => {
-  console.log(`🚀 MUTANT_SUPREME_EN v4.0 HYBRID running on port ${PORT}`);
+  console.log(`🚀 MUTANT_SUPREME_EN v4.1 ENHANCED running on port ${PORT}`);
   console.log(`📁 Auto-loading rules from GitHub: ${RULES_FILES.length} files`);
-  console.log(`🎯 Hybrid cinematic pipeline activated`);
+  console.log(`🎯 Enhanced hybrid cinematic pipeline activated`);
+  console.log(`🔧 New features: Boundary detection, replacement counting, response validation`);
 });
