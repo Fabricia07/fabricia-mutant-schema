@@ -136,7 +136,7 @@ ${mutatedText}
         messages: [{ role: "system", content: "You are a professional cinematic writer." },
                    { role: "user", content: prompt }],
         temperature: 0.8,
-        max_tokens: 1200,
+        max_tokens: 2500,
       });
 
       englishDraft = response.choices[0].message.content;
