@@ -47,8 +47,8 @@ async function loadAllRules() {
     );
 
     const fullContext = results
-      .map((r) => \n\n=== ${r.file.toUpperCase()} ===\n${r.content})
-      .join("\n");
+  .map((r) => `\n\n=== ${r.file.toUpperCase()} ===\n${r.content}`)
+  .join("\n");
 
     allRulesContent = fullContext;
     lastFetch = now;
