@@ -1,7 +1,7 @@
 import express from "express";
 import bodyParser from "body-parser";
 import fetch from "node-fetch";
-import OpenAI from "openai"; // Biblioteca oficial
+import OpenAI from "openai";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -11,10 +11,10 @@ app.use(bodyParser.json());
 const PORT = process.env.PORT || 10000;
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY, // Defina no Render
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
-// ================== CONFIGURAÇÃO DO GITHUB ==================
+// ================== CONFIG GITHUB ==================
 const GITHUB_BASE = "https://raw.githubusercontent.com/Fabricia07/fabricia-mutant-schema/main/docs/";
 const RULES_FILES = [
   "regras-mestras.md",
@@ -41,19 +41,19 @@ async function loadAllRules() {
       RULES_FILES.map(async (file) => {
         const response = await fetch(GITHUB_BASE + file);
         const content = await response.text();
-        console.log(`✅ ${file}: ${content.length} chars`);
+        console.log(✅ ${file}: ${content.length} chars);
         return { file, content };
       })
     );
 
     const fullContext = results
-      .map((r) => `\n\n=== ${r.file.toUpperCase()} ===\n${r.content}`)
+      .map((r) => \n\n=== ${r.file.toUpperCase()} ===\n${r.content})
       .join("\n");
 
     allRulesContent = fullContext;
     lastFetch = now;
 
-    console.log(`🎯 Loaded complete rules context: ${fullContext.length} chars`);
+    console.log(🎯 Loaded complete rules context: ${fullContext.length} chars);
     return fullContext;
   } catch (error) {
     console.error("❌ Error loading rules:", error);
@@ -69,7 +69,6 @@ async function processCompleteMutation(textoPT, dna = "auto", timeline = "auto")
 
     console.log("🔄 Processing complete mutation...");
 
-    // Substituições básicas (DNA + locais principais) - MELHORADO
     let mutatedText = textoPT;
     const basicMutations = {
       Rafael: "Ethan Bennett",
@@ -79,7 +78,6 @@ async function processCompleteMutation(textoPT, dna = "auto", timeline = "auto")
       "Fontes Engenharia": "Sullivan Engineering & Architecture",
       "Armando Luiz Fontes": "Dr. Raymond Sullivan",
       "Hospital Lourenço Jorge": "Mission Hospital",
-      // ADICIONAR AS QUE ESTAVAM FALTANDO:
       "Diego Lacerda": "Joshua Hamilton",
       "Diego": "Joshua",
       "Bruno": "Brandon Adams",
@@ -90,26 +88,22 @@ async function processCompleteMutation(textoPT, dna = "auto", timeline = "auto")
       "Florida": "North Carolina"
     };
 
-    console.log("🔧 Applying basic mutations with boundary detection...");
+    console.log("🔧 Applying basic mutations...");
     let totalReplacements = 0;
 
     for (const [pt, en] of Object.entries(basicMutations)) {
-      // ✅ MELHORIA 1: Boundary regex para palavras isoladas
-      const regex = new RegExp(`\\b${pt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, "gi");
-      
-      // ✅ MELHORIA 2: Contar replacements para diagnóstico
+      const regex = new RegExp(\\b${pt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b, "gi");
       const beforeCount = (mutatedText.match(regex) || []).length;
-      
+
       if (beforeCount > 0) {
         mutatedText = mutatedText.replace(regex, en);
         totalReplacements += beforeCount;
-        console.log(`  ✅ ${pt} → ${en} (${beforeCount} replacements)`);
+        console.log(`  ✅ ${pt} → ${en} (${beforeCount}x)`);
       }
     }
 
-    console.log(`🎯 Total mutations applied: ${totalReplacements}`);
+    console.log(🎯 Total mutations applied: ${totalReplacements});
 
-    // ================== CHAMADA À OPENAI ==================
     const prompt = `
 You are a cinematic storyteller (HBO/Netflix style).
 Context rules:
@@ -133,27 +127,27 @@ ${mutatedText}
     while (retry <= maxRetries) {
       const response = await openai.chat.completions.create({
         model: "gpt-4o-mini",
-        messages: [{ role: "system", content: "You are a professional cinematic writer." },
-                   { role: "user", content: prompt }],
+        messages: [
+          { role: "system", content: "You are a professional cinematic writer." },
+          { role: "user", content: prompt }
+        ],
         temperature: 0.8,
         max_tokens: 2500,
       });
 
       englishDraft = response.choices[0].message.content;
 
-      // ✅ MELHORIA 3: Validação de resposta vazia
       if (!englishDraft || englishDraft.trim().length < 200) {
-        console.warn(`⚠️ Response too short or empty (${englishDraft?.length || 0} chars). Retrying...`);
+        console.warn(⚠ Response too short or empty. Retrying...);
         retry++;
         continue;
       }
 
-      // Validação anti-PT
       const portugueseWords = [" e ", " de ", " para ", " com ", "não ", "sim ", "mas ", "quando ", "então "];
       const hasPortuguese = portugueseWords.some((word) => englishDraft.toLowerCase().includes(word));
 
       if (!hasPortuguese) break;
-      console.warn(`⚠️ Portuguese detected on retry ${retry + 1}, retrying...`);
+      console.warn(⚠ Portuguese detected. Retrying...);
       retry++;
     }
 
@@ -163,23 +157,18 @@ ${mutatedText}
       roteiroEN: englishDraft,
       aberturaAB: [
         "Where Blue Ridge secrets meet Asheville shadows",
-        "In North Carolina mountains, every story finds its truth",
+        "In North Carolina mountains, every story finds its truth"
       ],
       shorts: [
         "Asheville holds more than mountain views – it holds destinies.",
         "In the Blue Ridge, some conversations echo through generations.",
-        "North Carolina mountains witness more than just changing seasons.",
+        "North Carolina mountains witness more than just changing seasons."
       ],
-      relatorioSENTRY: `🛰️ Relatório SENTRY - HYBRID SYSTEM v4.1
-- Rules Context: ✅ ${rulesContext.length} chars loaded from GitHub
-- Basic Mutations: ✅ ${totalReplacements} replacements applied
-- Boundary Detection: ✅ Active
-- Post-process: ✅ OpenAI HBO-style polish
-- Anti-PT: ✅ Validated
-- Response Length: ${englishDraft.length} chars
-- Retries: ${retry}
-- Timestamp: ${new Date().toISOString()}
-- System: MUTANT_SUPREME_EN v4.1 ENHANCED`,
+      relatorioSENTRY: `🛰 Relatório SENTRY - HYBRID SYSTEM v4.1
+- Replacements: ✅ ${totalReplacements}
+- Validations: ✅ anti-PT, retries=${retry}
+- Tokens approx: ${englishDraft.length}
+- Time: ${new Date().toISOString()}`
     };
   } catch (error) {
     console.error("❌ Mutation processing error:", error);
@@ -199,7 +188,27 @@ app.post("/mutate", async (req, res) => {
     res.json(result);
   } catch (err) {
     console.error("❌ Mutation error:", err);
-    res.status(500).json({ error: "Erro no processamento da mutação", details: err.message });
+    res.status(500).json({ error: "Erro na mutação", details: err.message });
+  }
+});
+
+app.post("/revise", async (req, res) => {
+  try {
+    const { texto } = req.body;
+    if (!texto) return res.status(400).json({ error: "Campo obrigatório: texto" });
+
+    const revisado = texto
+      .replace(/…/g, '.')                           // reticências
+      .replace(/“|”/g, '')                         // aspas tipográficas
+      .replace(/--/g, '-')                         // hífens duplos
+      .replace(/(\r\n|\n|\r)/gm, ' ')              // quebras de linha
+      .replace(/\s{2,}/g, ' ')                     // múltiplos espaços
+      .trim();
+
+    res.json({ textoRevisado: revisado });
+  } catch (err) {
+    console.error("❌ Erro em /revise:", err);
+    res.status(500).json({ error: "Erro ao revisar texto", details: err.message });
   }
 });
 
@@ -223,10 +232,10 @@ app.get("/debug/rules", async (req, res) => {
   });
 });
 
-// ================== START ==================
+// ================== START SERVER ==================
 app.listen(PORT, () => {
-  console.log(`🚀 MUTANT_SUPREME_EN v4.1 ENHANCED running on port ${PORT}`);
-  console.log(`📁 Auto-loading rules from GitHub: ${RULES_FILES.length} files`);
-  console.log(`🎯 Enhanced hybrid cinematic pipeline activated`);
-  console.log(`🔧 New features: Boundary detection, replacement counting, response validation`);
+  console.log(🚀 MUTANT_SUPREME_EN v4.1 ENHANCED running on port ${PORT});
+  console.log(📁 Auto-loading rules from GitHub: ${RULES_FILES.length} files);
+  console.log(🎯 Hybrid cinematic pipeline activated);
+  console.log(⚡ REVISE endpoint activated as neural plasma);
 });
