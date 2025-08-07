@@ -47,13 +47,13 @@ async function loadAllRules() {
     );
 
     const fullContext = results
-  .map((r) => `\n\n=== ${r.file.toUpperCase()} ===\n${r.content}`)
-  .join("\n");
+      .map((r) => `\n\n=== ${r.file.toUpperCase()} ===\n${r.content}`)
+      .join("\n");
 
     allRulesContent = fullContext;
     lastFetch = now;
 
-    console.log(🎯 Loaded complete rules context: ${fullContext.length} chars);
+    console.log(`🎯 Loaded complete rules context: ${fullContext.length} chars`);
     return fullContext;
   } catch (error) {
     console.error("❌ Error loading rules:", error);
@@ -92,7 +92,7 @@ async function processCompleteMutation(textoPT, dna = "auto", timeline = "auto")
     let totalReplacements = 0;
 
     for (const [pt, en] of Object.entries(basicMutations)) {
-      const regex = new RegExp(\\b${pt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b, "gi");
+      const regex = new RegExp(`\\b${pt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, "gi");
       const beforeCount = (mutatedText.match(regex) || []).length;
 
       if (beforeCount > 0) {
@@ -102,7 +102,7 @@ async function processCompleteMutation(textoPT, dna = "auto", timeline = "auto")
       }
     }
 
-    console.log(🎯 Total mutations applied: ${totalReplacements});
+    console.log(`🎯 Total mutations applied: ${totalReplacements}`);
 
     const prompt = `
 You are a cinematic storyteller (HBO/Netflix style).
@@ -138,7 +138,7 @@ ${mutatedText}
       englishDraft = response.choices[0].message.content;
 
       if (!englishDraft || englishDraft.trim().length < 200) {
-        console.warn(⚠ Response too short or empty. Retrying...);
+        console.warn("⚠️ Response too short or empty. Retrying...");
         retry++;
         continue;
       }
@@ -147,7 +147,7 @@ ${mutatedText}
       const hasPortuguese = portugueseWords.some((word) => englishDraft.toLowerCase().includes(word));
 
       if (!hasPortuguese) break;
-      console.warn(⚠ Portuguese detected. Retrying...);
+      console.warn("⚠️ Portuguese detected. Retrying...");
       retry++;
     }
 
@@ -234,8 +234,8 @@ app.get("/debug/rules", async (req, res) => {
 
 // ================== START SERVER ==================
 app.listen(PORT, () => {
-  console.log(🚀 MUTANT_SUPREME_EN v4.1 ENHANCED running on port ${PORT});
-  console.log(📁 Auto-loading rules from GitHub: ${RULES_FILES.length} files);
-  console.log(🎯 Hybrid cinematic pipeline activated);
-  console.log(⚡ REVISE endpoint activated as neural plasma);
+  console.log(`🚀 MUTANT_SUPREME_EN v4.1 ENHANCED running on port ${PORT}`);
+  console.log(`📁 Auto-loading rules from GitHub: ${RULES_FILES.length} files`);
+  console.log(`🎯 Hybrid cinematic pipeline activated`);
+  console.log(`⚡ REVISE endpoint activated as neural plasma`);
 });
