@@ -41,7 +41,7 @@ async function loadAllRules() {
       RULES_FILES.map(async (file) => {
         const response = await fetch(GITHUB_BASE + file);
         const content = await response.text();
-        console.log(✅ ${file}: ${content.length} chars);
+        console.log(`✅ ${file}: ${content.length} chars`);
         return { file, content };
       })
     );
