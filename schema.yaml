@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Mutant Supreme EN Actions
-  version: 1.1.4
+  version: 2.0.0
 servers:
   - url: https://fabricia-mutant-schema.onrender.com
 
@@ -10,7 +10,9 @@ paths:
     post:
       operationId: mutateText
       summary: Mutação completa de texto PT para EN
-      description: Mutação cinematográfica para inglês americano. Respeitar DNA e Linha do Tempo.
+      description: >
+        Mutação cinematográfica para inglês americano, com ambientação exclusiva em Wilmington, NC.
+        Respeitar DNA, Linha do Tempo e Regras Mestres. Executa validações SENTRY (geografia, DNA, atmosfera).
       requestBody:
         required: true
         content:
@@ -23,16 +25,30 @@ paths:
                   description: Texto em português para mutação
                 dna:
                   type: string
-                  description: DNA dos personagens
+                  description: DNA dos personagens (19 fixos)
                 timeline:
                   type: string
                   description: (Opcional) Se não informado, será puxado automaticamente do Docs.
+                enforceWhitelist:
+                  type: boolean
+                  default: true
+                  description: Se true, só permite topônimos na whitelist de Wilmington (ambientacao.md)
+                whitelistOverride:
+                  type: array
+                  items:
+                    type: string
+                  description: (Opcional) Itens extras de whitelist para este request
+                blacklistOverride:
+                  type: array
+                  items:
+                    type: string
+                  description: (Opcional) Itens extras de blacklist para este request
               required:
                 - textoPT
                 - dna
       responses:
         "200":
-          description: Versão mutada com relatório
+          description: Versão mutada com relatório SENTRY estruturado
           content:
             application/json:
               schema:
@@ -49,7 +65,7 @@ paths:
                     items:
                       type: string
                   relatorioSENTRY:
-                    type: string
+                    $ref: "#/components/schemas/RelatorioSENTRY"
 
   /revise:
     post:
@@ -115,13 +131,69 @@ paths:
 
 components:
   schemas:
-    DefaultSchema:
+    RelatorioSENTRY:
       type: object
-      description: Dummy schema to satisfy OpenAPI requirements
       properties:
-        placeholder:
+        status:
           type: string
-          description: Campo de preenchimento simbólico
+          enum: [PASS, FAIL]
+        resumo:
+          type: string
+        geografia:
+          type: object
+          properties:
+            whitelistAtivada:
+              type: boolean
+            locaisDetectados:
+              type: array
+              items: { type: string }
+            foraDaWhitelist:
+              type: array
+              items: { type: string }
+            termosBanidos:
+              type: array
+              items: { type: string }
+        dna:
+          type: object
+          properties:
+            personagensUsados:
+              type: array
+              items: { type: string }
+            personagensNaoAutorizados:
+              type: array
+              items: { type: string }
+            inconsistencias:
+              type: array
+              items: { type: string }
+        atmosfera:
+          type: object
+          properties:
+            elementosAplicados:
+              type: array
+              items: { type: string }
+            faltantes:
+              type: array
+              items: { type: string }
+        cliffhangers:
+          type: object
+          properties:
+            contagem:
+              type: integer
+            marcasDeTempo:
+              type: array
+              items: { type: string }
+        output:
+          type: object
+          properties:
+            titlesAB:
+              type: array
+              items: { type: string }
+            frasesShorts:
+              type: array
+              items: { type: string }
+        violacoes:
+          type: array
+          items: { type: string }
 
 x-rules:
   - https://raw.githubusercontent.com/Fabricia07/fabricia-mutant-schema/main/docs/regras-mestras.md
@@ -129,3 +201,15 @@ x-rules:
   - https://raw.githubusercontent.com/Fabricia07/fabricia-mutant-schema/main/docs/ambientacao.md
   - https://raw.githubusercontent.com/Fabricia07/fabricia-mutant-schema/main/docs/protocolos.md
   - https://raw.githubusercontent.com/Fabricia07/fabricia-mutant-schema/main/docs/mutacoes.md
+
+# (Opcional) Metadados operacionais para o server ler:
+x-wilmington:
+  whitelistSource: https://raw.githubusercontent.com/Fabricia07/fabricia-mutant-schema/main/docs/ambientacao.md
+  blacklist:
+    - Asheville
+    - Biltmore
+    - Blue Ridge
+    - Pack Square
+    - Copacabana
+    - Ipanema
+    - Rio de Janeiro
