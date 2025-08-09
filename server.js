@@ -13,19 +13,19 @@ dotenv.config();
 
 const app = express();
 const log = pino({ level: process.env.LOG_LEVEL || "info" });
+
+// --- OpenAI ---
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
 
+// --- Middlewares ---
 app.use(helmet());
 app.use(cors());
 app.use(bodyParser.json({ limit: "2mb" }));
 app.use(rateLimit({ windowMs: 60_000, max: 60 }));
 
-// ---------------------------
-// Carrega schema e regras
-// ---------------------------
-const SCHEMA_URL =
-  "https://raw.githubusercontent.com/Fabricia07/fabricia-mutant-schema/main/schema.yaml";
+// --- Carrega schema e regras do GitHub ---
+const SCHEMA_URL = "https://raw.githubusercontent.com/Fabricia07/fabricia-mutant-schema/main/schema.yaml";
 
 async function loadSchema() {
   const txt = await (await fetch(SCHEMA_URL)).text();
@@ -39,9 +39,7 @@ async function loadRuleDocs(urls) {
 let schema = await loadSchema();
 const ruleDocs = await loadRuleDocs(schema["x-rules"] || []);
 
-// ---------------------------
-// Helpers de whitelist/blacklist
-// ---------------------------
+// --- Whitelist/Blacklist helpers ---
 const XW = schema["x-wilmington"] || {};
 const BASE_BLACKLIST = new Set([...(XW.blacklist || [])]);
 
@@ -66,10 +64,9 @@ function simpleHash(s) {
   return String(h);
 }
 
-// ---------------------------
-// Endpoints de diagnóstico
-// ---------------------------
-app.get("/health", (req, res) => {
+// --- Diagnóstico ---
+app.get("/", (_req, res) => res.type("text/plain").send("MUTANT_SUPREME_EN online"));
+app.get("/health", (_req, res) => {
   res.json({
     ok: true,
     schemaLoaded: !!schema,
@@ -78,14 +75,9 @@ app.get("/health", (req, res) => {
     model: OPENAI_MODEL,
   });
 });
+app.get("/_docs", (_req, res) => res.type("text/plain").send(ruleDocs));
 
-app.get("/_docs", (req, res) => {
-  res.type("text/plain").send(ruleDocs);
-});
-
-// ---------------------------
-// ROTAS
-// ---------------------------
+// --- /mutate ---
 app.post("/mutate", async (req, res) => {
   try {
     const {
@@ -101,7 +93,7 @@ app.post("/mutate", async (req, res) => {
       return res.status(400).json({ error: "textoPT e dna são obrigatórios" });
     }
 
-    // 1) Validação geográfica
+    // 1) whitelist carregada do repo
     const wlSource = schema["x-wilmington"]?.whitelistSource;
     let wlText = "";
     if (wlSource) wlText = await (await fetch(wlSource)).text();
@@ -109,14 +101,13 @@ app.post("/mutate", async (req, res) => {
       .filter(Boolean)
       .concat(whitelistOverride);
 
+    // 2) validação geográfica
     const geo = geoValidate(textoPT, { whitelist, blacklist: blacklistOverride });
-
-    // 2) Se tiver FAIL geográfico (termo banido), já sinaliza (ainda produzimos output)
     const geoFail = (enforceWhitelist && geo.foraDaWhitelist.length > 0) || geo.termosBanidos.length > 0;
 
-    // 3) Chamada OpenAI — ordem dos docs: mutações > dna > ambientação > protocolos > regras
+    // 3) montar prompt (ordem: mutações > dna > ambientação > protocolos > regras)
     const rulesIndex = (schema["x-rules"] || []).reduce((acc, url) => {
-      acc[url.split("/").pop()] = url; // ex.: mutacoes.md, dna.md...
+      acc[url.split("/").pop()] = url; // mutacoes.md, dna.md, ...
       return acc;
     }, {});
     async function fetchRaw(url) {
@@ -173,52 +164,42 @@ Liste brevemente itens aplicados (locais, clima, personagens, cliffhangers).
     });
 
     const raw = completion.choices?.[0]?.message?.content || "";
-    log.info({ rawModel: raw }, "OpenAI raw output"); // <-- ADIÇÃO
+    log.info({ rawModel: raw }, "OpenAI raw output");
 
-    // helper: extrai bloco entre marcadores; se não achar, retorna ""
-function betweenTag(text, tag) {
-  const re = new RegExp(`<<<${tag}>>>[\\s\\S]*?((?=<<<)|$)`, "m");
-  const m = text.match(re);
-  return m ? m[0].replace(new RegExp(`<<<${tag}>>>\\s*`), "").trim() : "";
-}
-
-let roteiroEN = betweenTag(raw, "ROTEIRO_EN");
-let titlesBlock = betweenTag(raw, "TITLES_AB");
-let shortsBlock = betweenTag(raw, "SHORTS");
-
-// FALLBACK: se o modelo não usou marcadores, usamos o texto inteiro como roteiro
-if (!roteiroEN && raw) {
-  roteiroEN = raw.trim();
-  const lines = raw.split("\n").map(s => s.trim()).filter(Boolean);
-  // tenta aproveitar as primeiras linhas como títulos/shorts
-  titlesBlock = lines.slice(0, 2).join("\n");
-  shortsBlock = lines.slice(2, 5).join("\n");
-}
+    // 4) parsing seguro por tags
+    function between(tag, src) {
+      const re = new RegExp(`<<<${tag}>>>\\s*([\\s\\S]*?)\\s*(?=<<<|$)`, "m");
+      const m = src.match(re);
+      return m ? (m[1] || "").trim() : "";
+    }
+    const roteiroEN = between("ROTEIRO_EN", raw);
+    const titlesBlock = between("TITLES_AB", raw);
+    const shortsBlock = between("SHORTS", raw);
 
     const aberturaAB = titlesBlock
       .split("\n")
-      .map(s => s.replace(/^-\s*/, "").trim())
+      .map((s) => s.replace(/^-+\s*/, "").replace(/^-?\s*/, "").trim())
       .filter(Boolean)
       .slice(0, 2);
 
     const shorts = shortsBlock
       .split("\n")
-      .map(s => s.replace(/^-\s*/, "").trim())
+      .map((s) => s.replace(/^-+\s*/, "").replace(/^-?\s*/, "").trim())
       .filter(Boolean)
       .slice(0, 3);
 
-    // 4) Monta SENTRY
+    // 5) SENTRY
     const relatorioSENTRY = {
       status: geoFail ? "FAIL" : "PASS",
       resumo: geoFail ? "Ajustes necessários na geografia/termos banidos." : "Conforme.",
       geografia: { whitelistAtivada: !!enforceWhitelist, ...geo },
       dna: {
-        personagensUsados: [], // opcional preencher com parsing do roteiroEN
+        personagensUsados: [], // opcional
         personagensNaoAutorizados: [],
         inconsistencias: [],
       },
       atmosfera: {
-        elementosAplicados: [], // coastal mist, golden coastal light, etc.
+        elementosAplicados: [],
         faltantes: [],
       },
       cliffhangers: { contagem: 0, marcasDeTempo: [] },
@@ -227,28 +208,24 @@ if (!roteiroEN && raw) {
     };
 
     return res.json({
-     roteiroEN,
-     aberturaAB,
-     shorts,
-     relatorioSENTRY,
-     debugRaw: raw // <-- ADIÇÃO TEMPORÁRIA (depois a gente remove)
-});
-
+      roteiroEN,
+      aberturaAB,
+      shorts,
+      relatorioSENTRY,
+      // debugRaw: raw, // (opcional: remova em produção)
+    });
   } catch (e) {
     log.error(e);
     return res.status(500).json({ error: "Internal error" });
   }
 });
 
-app.post("/revise", (req, res) => {
-  // mantém a mesma assinatura; ajuste sua lógica atual aqui
-  res.json({ trechoRevisado: "[TEXTO REVISADO]" });
-});
+// --- stubs extras ---
+app.post("/revise", (_req, res) => res.json({ trechoRevisado: "[TEXTO REVISADO]" }));
+app.post("/ctrtest", (_req, res) =>
+  res.json({ ctrPrevisto: "10-14%", sugestaoMelhoria: "Use um curiosity gap nos 7 primeiros segundos." })
+);
 
-app.post("/ctrtest", (req, res) => {
-  // stub simples
-  res.json({ ctrPrevisto: "10-14%", sugestaoMelhoria: "Use um curiosity gap nos 7 primeiros segundos." });
-});
-
+// --- start ---
 const port = process.env.PORT || 8080;
 app.listen(port, () => console.log(`Mutant server on :${port}`));
