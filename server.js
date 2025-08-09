@@ -173,6 +173,7 @@ Liste brevemente itens aplicados (locais, clima, personagens, cliffhangers).
     });
 
     const raw = completion.choices?.[0]?.message?.content || "";
+    log.info({ rawModel: raw }, "OpenAI raw output"); // <-- ADIÇÃO
 
     // parsing por delimitadores
     function between(tag) {
@@ -215,7 +216,14 @@ Liste brevemente itens aplicados (locais, clima, personagens, cliffhangers).
       violacoes: [],
     };
 
-    return res.json({ roteiroEN, aberturaAB, shorts, relatorioSENTRY });
+    return res.json({
+     roteiroEN,
+     aberturaAB,
+     shorts,
+     relatorioSENTRY,
+     debugRaw: raw // <-- ADIÇÃO TEMPORÁRIA (depois a gente remove)
+});
+
   } catch (e) {
     log.error(e);
     return res.status(500).json({ error: "Internal error" });
