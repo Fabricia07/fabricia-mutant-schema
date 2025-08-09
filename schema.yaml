@@ -196,11 +196,11 @@ components:
           items: { type: string }
 
 x-rules:
-  - https://raw.githubusercontent.com/Fabricia07/fabricia-mutant-schema/main/docs/regras-mestras.md
+  - https://raw.githubusercontent.com/Fabricia07/fabricia-mutant-schema/main/docs/mutacoes.md
   - https://raw.githubusercontent.com/Fabricia07/fabricia-mutant-schema/main/docs/dna.md
   - https://raw.githubusercontent.com/Fabricia07/fabricia-mutant-schema/main/docs/ambientacao.md
   - https://raw.githubusercontent.com/Fabricia07/fabricia-mutant-schema/main/docs/protocolos.md
-  - https://raw.githubusercontent.com/Fabricia07/fabricia-mutant-schema/main/docs/mutacoes.md
+  - https://raw.githubusercontent.com/Fabricia07/fabricia-mutant-schema/main/docs/regras-mestras.md
 
 # (Opcional) Metadados operacionais para o server ler:
 x-wilmington:
@@ -210,6 +210,7 @@ x-wilmington:
     - Biltmore
     - Blue Ridge
     - Pack Square
+    - Patton Avenue
     - Copacabana
-    - Ipanema
+    - Rio
     - Rio de Janeiro
