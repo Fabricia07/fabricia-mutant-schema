@@ -93,70 +93,70 @@ app.post("/mutate", async (req, res) => {
       return res.status(400).json({ error: "textoPT e dna são obrigatórios" });
     }
 
-// 1) whitelist carregada do repo
-const wlSource = schema["x-wilmington"]?.whitelistSource;
-let wlText = "";
-if (wlSource) wlText = await (await fetch(wlSource)).text();
-const whitelistBase = [...new Set((wlText.match(/^[^\n]+$/gm) || []).map((s) => s.trim()))]
-  .filter(Boolean)
-  .concat(whitelistOverride);
+    // 1) whitelist carregada do repo
+    const wlSource = schema["x-wilmington"]?.whitelistSource;
+    let wlText = "";
+    if (wlSource) wlText = await (await fetch(wlSource)).text();
+    const whitelistBase = [...new Set((wlText.match(/^[^\n]+$/gm) || []).map((s) => s.trim()))]
+      .filter(Boolean)
+      .concat(whitelistOverride);
 
-// 🔹 Extra: pegar nomes do dna.md para whitelist
-const rulesIndex = (schema["x-rules"] || []).reduce((acc, url) => {
-  acc[url.split("/").pop()] = url; // mutacoes.md, dna.md, ...
-  return acc;
-}, {});
-async function fetchRaw(url) {
-  return (await fetch(url)).text();
-}
+    // 🔹 Extra: pegar nomes do dna.md para whitelist
+    const rulesIndex = (schema["x-rules"] || []).reduce((acc, url) => {
+      acc[url.split("/").pop()] = url;
+      return acc;
+    }, {});
+    async function fetchRaw(url) {
+      return (await fetch(url)).text();
+    }
 
-let dnaDoc = "";
-if (rulesIndex["dna.md"]) dnaDoc = await fetchRaw(rulesIndex["dna.md"]);
-const characterNames = Array.from(dnaDoc.matchAll(/\*\*Nome:\*\*\s*([^\n]+)\n/gi))
-  .map((m) => m[1].trim());
+    let dnaDoc = "";
+    if (rulesIndex["dna.md"]) dnaDoc = await fetchRaw(rulesIndex["dna.md"]);
+    const characterNames = Array.from(dnaDoc.matchAll(/\*\*Nome:\*\*\s*([^\n]+)\n/gi))
+      .map((m) => m[1].trim());
 
-// 🔹 Extra: geografia comum de Wilmington
-const extraGeo = [
-  "Wilmington", "Cape Fear", "Cape Fear River", "Historic Downtown",
-  "Wrightsville Beach", "Carolina Beach", "Riverwalk", "Airlie Gardens",
-  "Greenfield Lake", "Market Street", "Front Street", "Water Street", "S 3rd Street"
-];
+    // 🔹 Extra: geografia comum de Wilmington
+    const extraGeo = [
+      "Wilmington", "Cape Fear", "Cape Fear River", "Historic Downtown",
+      "Wrightsville Beach", "Carolina Beach", "Riverwalk", "Airlie Gardens",
+      "Greenfield Lake", "Market Street", "Front Street", "Water Street", "S 3rd Street"
+    ];
 
-// 🔹 Whitelist final unificada
-const whitelist = [...new Set([...whitelistBase, ...characterNames, ...extraGeo])];
+    // 🔹 Whitelist final unificada
+    const whitelist = [...new Set([...whitelistBase, ...characterNames, ...extraGeo])];
 
-// 2) validação geográfica
-const geo = geoValidate(textoPT, { whitelist: whitelistExpanded, blacklist: blacklistOverride });
-// Palavras que não devem acionar falha, mesmo fora da whitelist
-const ignoreList = ["Hoje", "Today", "Yesterday", "Tomorrow"];
+    // 2) validação geográfica
+    const geo = geoValidate(textoPT, { whitelist, blacklist: blacklistOverride });
 
-const foraDaWhitelistFiltrado = geo.foraDaWhitelist.filter(
-  (item) => !ignoreList.includes(item)
-);
+    // Palavras que não devem acionar falha, mesmo fora da whitelist
+    const ignoreList = ["Hoje", "Today", "Yesterday", "Tomorrow"];
 
-const geoFail =
-  (enforceWhitelist && foraDaWhitelistFiltrado.length > 0) ||
-  geo.termosBanidos.length > 0;
+    const foraDaWhitelistFiltrado = geo.foraDaWhitelist.filter(
+      (item) => !ignoreList.includes(item)
+    );
 
-// 3) montar prompt (ordem: mutações > dna > ambientação > protocolos > regras)
-const wanted = ["mutacoes.md", "dna.md", "ambientacao.md", "protocolos.md", "regras-mestras.md"];
-const orderedDocs = [];
-for (const name of wanted) {
-  const url = rulesIndex[name];
-  if (url) orderedDocs.push(`### ${name}\n\n${await fetchRaw(url)}`);
-}
-const docsForPrompt = orderedDocs.join("\n\n---\n\n");
+    const geoFail =
+      (enforceWhitelist && foraDaWhitelistFiltrado.length > 0) ||
+      geo.termosBanidos.length > 0;
 
-const systemMsg = [
-const systemMsg = [
-  "Você é o agente MUTANT_SUPREME_EN.",
-  "Siga estritamente as regras dos documentos. NUNCA invente locais fora de Wilmington/NC.",
-  "Responda EXATAMENTE no formato de tags solicitado. Não inclua tags em títulos ou shorts.",
-  "Saída obrigatória: <<<ROTEIRO_EN>>> + <<<TITLES_AB>>> (2 linhas) + <<<SHORTS>>> (3 linhas) + <<<SENTRY_HINTS>>>.",
-  "Se faltar qualquer tag, reescreva internamente até cumprir o formato."
-].join(" ");
+    // 3) montar prompt
+    const wanted = ["mutacoes.md", "dna.md", "ambientacao.md", "protocolos.md", "regras-mestras.md"];
+    const orderedDocs = [];
+    for (const name of wanted) {
+      const url = rulesIndex[name];
+      if (url) orderedDocs.push(`### ${name}\n\n${await fetchRaw(url)}`);
+    }
+    const docsForPrompt = orderedDocs.join("\n\n---\n\n");
 
-const userMsg = `
+    const systemMsg = [
+      "Você é o agente MUTANT_SUPREME_EN.",
+      "Siga estritamente as regras dos documentos. NUNCA invente locais fora de Wilmington/NC.",
+      "Responda EXATAMENTE no formato de tags solicitado. Não inclua tags em títulos ou shorts.",
+      "Saída obrigatória: <<<ROTEIRO_EN>>> + <<<TITLES_AB>>> (2 linhas) + <<<SHORTS>>> (3 linhas) + <<<SENTRY_HINTS>>>.",
+      "Se faltar qualquer tag, reescreva internamente até cumprir o formato."
+    ].join(" ");
+
+    const userMsg = `
 [INPUT_PT]
 ${textoPT}
 
@@ -181,6 +181,7 @@ ${docsForPrompt}
 - Clima aplicado:
 - Personagens:
 - Cliffhangers:
+`;
 
     const completion = await openai.chat.completions.create({
       model: OPENAI_MODEL,
@@ -222,7 +223,7 @@ ${docsForPrompt}
       resumo: geoFail ? "Ajustes necessários na geografia/termos banidos." : "Conforme.",
       geografia: { whitelistAtivada: !!enforceWhitelist, ...geo },
       dna: {
-        personagensUsados: [], // opcional
+        personagensUsados: [],
         personagensNaoAutorizados: [],
         inconsistencias: [],
       },
@@ -240,7 +241,6 @@ ${docsForPrompt}
       aberturaAB,
       shorts,
       relatorioSENTRY,
-      // debugRaw: raw, // (opcional: remova em produção)
     });
   } catch (e) {
     log.error(e);
