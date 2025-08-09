@@ -175,25 +175,35 @@ Liste brevemente itens aplicados (locais, clima, personagens, cliffhangers).
     const raw = completion.choices?.[0]?.message?.content || "";
     log.info({ rawModel: raw }, "OpenAI raw output"); // <-- ADIÇÃO
 
-    // parsing por delimitadores
-    function between(tag) {
-      const re = new RegExp(`<<<${tag}>>>[\\s\\S]*?((?=<<<)|$)`, "m");
-      const m = raw.match(re);
-      return m ? m[0].replace(new RegExp(`<<<${tag}>>>\\s*`), "").trim() : "";
-    }
-    const roteiroEN = between("ROTEIRO_EN");
-    const titlesBlock = between("TITLES_AB");
-    const shortsBlock = between("SHORTS");
+    // helper: extrai bloco entre marcadores; se não achar, retorna ""
+function betweenTag(text, tag) {
+  const re = new RegExp(`<<<${tag}>>>[\\s\\S]*?((?=<<<)|$)`, "m");
+  const m = text.match(re);
+  return m ? m[0].replace(new RegExp(`<<<${tag}>>>\\s*`), "").trim() : "";
+}
+
+let roteiroEN = betweenTag(raw, "ROTEIRO_EN");
+let titlesBlock = betweenTag(raw, "TITLES_AB");
+let shortsBlock = betweenTag(raw, "SHORTS");
+
+// FALLBACK: se o modelo não usou marcadores, usamos o texto inteiro como roteiro
+if (!roteiroEN && raw) {
+  roteiroEN = raw.trim();
+  const lines = raw.split("\n").map(s => s.trim()).filter(Boolean);
+  // tenta aproveitar as primeiras linhas como títulos/shorts
+  titlesBlock = lines.slice(0, 2).join("\n");
+  shortsBlock = lines.slice(2, 5).join("\n");
+}
 
     const aberturaAB = titlesBlock
       .split("\n")
-      .map((s) => s.replace(/^-\\s*/, "").trim())
+      .map(s => s.replace(/^-\s*/, "").trim())
       .filter(Boolean)
       .slice(0, 2);
 
     const shorts = shortsBlock
       .split("\n")
-      .map((s) => s.replace(/^-\\s*/, "").trim())
+      .map(s => s.replace(/^-\s*/, "").trim())
       .filter(Boolean)
       .slice(0, 3);
 
