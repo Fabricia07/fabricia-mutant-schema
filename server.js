@@ -93,44 +93,70 @@ app.post("/mutate", async (req, res) => {
       return res.status(400).json({ error: "textoPT e dna são obrigatórios" });
     }
 
-    // 1) whitelist carregada do repo
-    const wlSource = schema["x-wilmington"]?.whitelistSource;
-    let wlText = "";
-    if (wlSource) wlText = await (await fetch(wlSource)).text();
-    const whitelist = [...new Set((wlText.match(/^[^\n]+$/gm) || []).map((s) => s.trim()))]
-      .filter(Boolean)
-      .concat(whitelistOverride);
+// 1) whitelist carregada do repo
+const wlSource = schema["x-wilmington"]?.whitelistSource;
+let wlText = "";
+if (wlSource) wlText = await (await fetch(wlSource)).text();
+const whitelistBase = [...new Set((wlText.match(/^[^\n]+$/gm) || []).map((s) => s.trim()))]
+  .filter(Boolean)
+  .concat(whitelistOverride);
 
-    // 2) validação geográfica
-    const geo = geoValidate(textoPT, { whitelist, blacklist: blacklistOverride });
-    const geoFail = (enforceWhitelist && geo.foraDaWhitelist.length > 0) || geo.termosBanidos.length > 0;
+// 🔹 Extra: pegar nomes do dna.md para whitelist
+const rulesIndex = (schema["x-rules"] || []).reduce((acc, url) => {
+  acc[url.split("/").pop()] = url; // mutacoes.md, dna.md, ...
+  return acc;
+}, {});
+async function fetchRaw(url) {
+  return (await fetch(url)).text();
+}
 
-    // 3) montar prompt (ordem: mutações > dna > ambientação > protocolos > regras)
-    const rulesIndex = (schema["x-rules"] || []).reduce((acc, url) => {
-      acc[url.split("/").pop()] = url; // mutacoes.md, dna.md, ...
-      return acc;
-    }, {});
-    async function fetchRaw(url) {
-      return (await fetch(url)).text();
-    }
-    const wanted = ["mutacoes.md", "dna.md", "ambientacao.md", "protocolos.md", "regras-mestras.md"];
-    const orderedDocs = [];
-    for (const name of wanted) {
-      const url = rulesIndex[name];
-      if (url) orderedDocs.push(`### ${name}\n\n${await fetchRaw(url)}`);
-    }
-    const docsForPrompt = orderedDocs.join("\n\n---\n\n");
+let dnaDoc = "";
+if (rulesIndex["dna.md"]) dnaDoc = await fetchRaw(rulesIndex["dna.md"]);
+const characterNames = Array.from(dnaDoc.matchAll(/\*\*Nome:\*\*\s*([^\n]+)\n/gi))
+  .map((m) => m[1].trim());
 
-    const systemMsg = [
-      "Você é o agente MUTANT_SUPREME_EN.",
-      "Aplique SEMPRE as mutações (De/Para) para Wilmington, NC.",
-      "Use SOMENTE os 19 personagens do dna.md (nomes/idades/profissões/relações exatas).",
-      "Use apenas locais REAIS de Wilmington (whitelist) e evite blacklist.",
-      "Aplique o protocolo de luto americano quando a timeline indicar morte.",
-      "Saída obrigatória: ROTEIRO_EN, TITLES_AB (2), SHORTS (3) e SENTRY (JSON hints).",
-    ].join(" ");
+// 🔹 Extra: geografia comum de Wilmington
+const extraGeo = [
+  "Wilmington", "Cape Fear", "Cape Fear River", "Historic Downtown",
+  "Wrightsville Beach", "Carolina Beach", "Riverwalk", "Airlie Gardens",
+  "Greenfield Lake", "Market Street", "Front Street", "Water Street", "S 3rd Street"
+];
 
-    const userMsg = `
+// 🔹 Whitelist final unificada
+const whitelist = [...new Set([...whitelistBase, ...characterNames, ...extraGeo])];
+
+// 2) validação geográfica
+const geo = geoValidate(textoPT, { whitelist: whitelistExpanded, blacklist: blacklistOverride });
+// Palavras que não devem acionar falha, mesmo fora da whitelist
+const ignoreList = ["Hoje", "Today", "Yesterday", "Tomorrow"];
+
+const foraDaWhitelistFiltrado = geo.foraDaWhitelist.filter(
+  (item) => !ignoreList.includes(item)
+);
+
+const geoFail =
+  (enforceWhitelist && foraDaWhitelistFiltrado.length > 0) ||
+  geo.termosBanidos.length > 0;
+
+// 3) montar prompt (ordem: mutações > dna > ambientação > protocolos > regras)
+const wanted = ["mutacoes.md", "dna.md", "ambientacao.md", "protocolos.md", "regras-mestras.md"];
+const orderedDocs = [];
+for (const name of wanted) {
+  const url = rulesIndex[name];
+  if (url) orderedDocs.push(`### ${name}\n\n${await fetchRaw(url)}`);
+}
+const docsForPrompt = orderedDocs.join("\n\n---\n\n");
+
+const systemMsg = [
+const systemMsg = [
+  "Você é o agente MUTANT_SUPREME_EN.",
+  "Siga estritamente as regras dos documentos. NUNCA invente locais fora de Wilmington/NC.",
+  "Responda EXATAMENTE no formato de tags solicitado. Não inclua tags em títulos ou shorts.",
+  "Saída obrigatória: <<<ROTEIRO_EN>>> + <<<TITLES_AB>>> (2 linhas) + <<<SHORTS>>> (3 linhas) + <<<SENTRY_HINTS>>>.",
+  "Se faltar qualquer tag, reescreva internamente até cumprir o formato."
+].join(" ");
+
+const userMsg = `
 [INPUT_PT]
 ${textoPT}
 
@@ -142,21 +168,23 @@ ${docsForPrompt}
 
 [FORMATO_DE_SAIDA]
 <<<ROTEIRO_EN>>>
-... texto em inglês cinematográfico (aprox. 5:30) ...
+(texto cinematográfico em inglês; ~5min; com cenas em Wilmington; aplicar mutações e protocolos)
 <<<TITLES_AB>>>
-- Título A
-- Título B
+- Title A (40-60 caracteres, CTR alto)
+- Title B (40-60 caracteres, CTR alto)
 <<<SHORTS>>>
-- Frase curta 1 (<=280)
-- Frase curta 2 (<=280)
-- Frase curta 3 (<=280)
+- Frase 1 (<=280)
+- Frase 2 (<=280)
+- Frase 3 (<=280)
 <<<SENTRY_HINTS>>>
-Liste brevemente itens aplicados (locais, clima, personagens, cliffhangers).
-`;
+- Locais usados:
+- Clima aplicado:
+- Personagens:
+- Cliffhangers:
 
     const completion = await openai.chat.completions.create({
       model: OPENAI_MODEL,
-      temperature: 0.5,
+      temperature: 0.2,
       messages: [
         { role: "system", content: systemMsg },
         { role: "user", content: userMsg },
