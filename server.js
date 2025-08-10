@@ -132,6 +132,19 @@ app.post("/mutate", async (req, res) => {
       "S 3rd Street", "Dock Street", "Oakdale Cemetery", "First Baptist Church"
     ];
 
+    // 🔹 Personagens (whitelist fixa para garantir)
+const characterFixed = [
+  "Maggie Bennett", "Joshua Hamilton", "Ethan Bennett", "Joann Adams",
+  "Brandon Adams", "Olivia \"Liv\" Campbell", "Lauren Sullivan", "Gavin Campbell",
+  "Heather \"Hettie\" Whitmore", "Julian Sullivan", "Dr. Raymond Sullivan",
+  "Isabella Romano Sullivan", "Anthony Hamilton", "Meredith Hamilton",
+  "Linda Monroe", "Jasmine Douglas", "Christine Douglas", "Jim Douglas",
+  "Melany Campbell"
+];
+
+// 🔹 Whitelist final unificada
+const whitelist = [...new Set([...whitelistBase, ...characterFixed, ...extraGeo])];
+ 
     const whitelist = [...new Set([...whitelistBase, ...characterNames, ...extraGeo, ...whitelistOverride])];
 
     // 2) Validação geográfica (com pequeno filtro)
@@ -219,6 +232,17 @@ ${docsForPrompt}
       .filter(Boolean)
       .slice(0, 3);
 
+// 🔧 Padding: garantir 2 títulos e 3 shorts
+if (aberturaAB.length < 2) {
+  // título base
+  const base = aberturaAB[0] || "Wilmington — coastal secrets";
+  while (aberturaAB.length < 2) aberturaAB.push(base + " (alt)");
+}
+if (shorts.length < 3) {
+  const filler = "A coastal city holding its breath between grief and hope.";
+  while (shorts.length < 3) shorts.push(filler);
+}
+    
     // 5) SENTRY
     const relatorioSENTRY = {
       status: geoFail ? "FAIL" : "PASS",
